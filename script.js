@@ -1,3 +1,10 @@
+// Check if Firebase is loaded
+if (typeof firebase === 'undefined') {
+    alert('Firebase SDK not loaded. Check your internet connection or CDN availability.');
+} else {
+    alert('Firebase SDK loaded successfully.');
+}
+
 // Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBcaSNQuZizwEo39oz5zpCirHyuSK78Htk",
@@ -10,22 +17,36 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+try {
+    firebase.initializeApp(firebaseConfig);
+    alert('Firebase initialized successfully.');
+} catch (error) {
+    alert('Firebase initialization failed: ' + error.message);
+}
 
+const db = firebase.firestore();
 let currentUser = '';
 let selectedUser = '';
+let unsubscribeMessages = null; // To manage real-time listener
 
 async function login() {
     const username = document.getElementById('username').value.trim();
-    if (!username) return alert('Please enter a username');
+    if (!username) {
+        alert('Please enter a username.');
+        return;
+    }
 
     currentUser = username;
-    // Add user to Firestore if not exists
-    await db.collection('users').doc(username).set({
-        username: username,
-        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    try {
+        await db.collection('users').doc(username).set({
+            username: username,
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        alert(`Logged in as ${username}`);
+    } catch (error) {
+        alert('Error saving user to Firestore: ' + error.message);
+        return;
+    }
 
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('chat-screen').classList.remove('hidden');
@@ -34,6 +55,8 @@ async function login() {
 }
 
 function logout() {
+    if (unsubscribeMessages) unsubscribeMessages(); // Stop listening to messages
+    alert(`Logged out from ${currentUser}`);
     currentUser = '';
     selectedUser = '';
     document.getElementById('chat-screen').classList.add('hidden');
@@ -46,60 +69,97 @@ async function updateUserList() {
     const userList = document.getElementById('user-list');
     userList.innerHTML = '';
 
-    const snapshot = await db.collection('users').get();
-    const users = snapshot.docs.map(doc => doc.data().username)
-        .filter(user => user !== currentUser && user.toLowerCase().includes(searchTerm));
+    try {
+        const snapshot = await db.collection('users').get();
+        const users = snapshot.docs.map(doc => doc.data().username)
+            .filter(user => user !== currentUser && user.toLowerCase().includes(searchTerm));
+        
+        if (users.length === 0) {
+            alert('No matching users found.');
+        } else {
+            alert(`Found ${users.length} users.`);
+        }
 
-    users.forEach(user => {
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.textContent = user;
-        div.onclick = () => selectUser(user);
-        userList.appendChild(div);
-    });
+        users.forEach(user => {
+            const div = document.createElement('div');
+            div.className = 'user-item';
+            div.textContent = user;
+            div.onclick = () => selectUser(user);
+            userList.appendChild(div);
+        });
+    } catch (error) {
+        alert('Error fetching users: ' + error.message);
+    }
 }
 
 function selectUser(user) {
+    if (unsubscribeMessages) unsubscribeMessages(); // Stop previous listener
     selectedUser = user;
     document.getElementById('chat-header').textContent = `Chat with ${user}`;
+    alert(`Selected user: ${user}`);
     listenToMessages();
 }
 
 async function sendMessage() {
     const input = document.getElementById('message-input');
     const text = input.value.trim();
-    if (!text || !selectedUser) return;
+    if (!text) {
+        alert('Please enter a message.');
+        return;
+    }
+    if (!selectedUser) {
+        alert('Please select a user to chat with.');
+        return;
+    }
 
     const chatKey = [currentUser, selectedUser].sort().join('-');
-    await db.collection('messages').doc(chatKey).collection('chat').add({
-        sender: currentUser,
-        text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    input.value = '';
+    try {
+        await db.collection('messages').doc(chatKey).collection('chat').add({
+            sender: currentUser,
+            text,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert('Message sent successfully.');
+        input.value = '';
+    } catch (error) {
+        alert('Error sending message: ' + error.message);
+    }
 }
 
 function listenToMessages() {
     const messagesDiv = document.getElementById('messages');
     messagesDiv.innerHTML = '';
 
-    if (!selectedUser) return;
+    if (!selectedUser) {
+        alert('No user selected for chat.');
+        return;
+    }
 
     const chatKey = [currentUser, selectedUser].sort().join('-');
-    db.collection('messages').doc(chatKey).collection('chat')
-        .orderBy('timestamp')
-        .onSnapshot(snapshot => {
-            messagesDiv.innerHTML = '';
-            snapshot.forEach(doc => {
-                const msg = doc.data();
-                const div = document.createElement('div');
-                div.className = `message ${msg.sender === currentUser ? 'sent' : 'received'}`;
-                div.textContent = `${msg.sender}: ${msg.text}`;
-                messagesDiv.appendChild(div);
+    try {
+        unsubscribeMessages = db.collection('messages').doc(chatKey).collection('chat')
+            .orderBy('timestamp')
+            .onSnapshot(snapshot => {
+                messagesDiv.innerHTML = '';
+                if (snapshot.empty) {
+                    alert('No messages yet in this chat.');
+                } else {
+                    alert(`Loaded ${snapshot.size} messages.`);
+                }
+                snapshot.forEach(doc => {
+                    const msg = doc.data();
+                    const div = document.createElement('div');
+                    div.className = `message ${msg.sender === currentUser ? 'sent' : 'received'}`;
+                    div.textContent = `${msg.sender}: ${msg.text}`;
+                    messagesDiv.appendChild(div);
+                });
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, error => {
+                alert('Error listening to messages: ' + error.message);
             });
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
+    } catch (error) {
+        alert('Error setting up message listener: ' + error.message);
+    }
 }
 
 // Event Listeners
@@ -107,3 +167,10 @@ document.getElementById('search-user').addEventListener('input', updateUserList)
 document.getElementById('message-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
+
+// Initial Check
+if (document.getElementById('username')) {
+    alert('Page loaded successfully.');
+} else {
+    alert('Error: DOM elements not found.');
+}
