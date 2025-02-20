@@ -1,8 +1,18 @@
-// Check if Firebase is loaded
-if (typeof firebase === 'undefined') {
-    alert('Firebase SDK not loaded. Check your internet connection or CDN availability.');
-} else {
-    alert('Firebase SDK loaded successfully.');
+// Function to load Firebase SDK dynamically
+function loadFirebase() {
+    return new Promise((resolve, reject) => {
+        const appScript = document.createElement('script');
+        appScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        appScript.onload = () => {
+            const firestoreScript = document.createElement('script');
+            firestoreScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+            firestoreScript.onload = () => resolve();
+            firestoreScript.onerror = () => reject(new Error('Failed to load Firebase Firestore SDK'));
+            document.body.appendChild(firestoreScript);
+        };
+        appScript.onerror = () => reject(new Error('Failed to load Firebase App SDK'));
+        document.body.appendChild(appScript);
+    });
 }
 
 // Firebase Configuration
@@ -16,20 +26,37 @@ const firebaseConfig = {
     measurementId: "G-50LPQ2GDHK"
 };
 
-// Initialize Firebase
-try {
-    firebase.initializeApp(firebaseConfig);
-    alert('Firebase initialized successfully.');
-} catch (error) {
-    alert('Firebase initialization failed: ' + error.message);
-}
-
-const db = firebase.firestore();
+let db;
 let currentUser = '';
 let selectedUser = '';
-let unsubscribeMessages = null; // To manage real-time listener
+let unsubscribeMessages = null;
+
+async function initializeApp() {
+    try {
+        await loadFirebase();
+        alert('Firebase SDK loaded successfully.');
+        firebase.initializeApp(firebaseConfig);
+        alert('Firebase initialized successfully.');
+        db = firebase.firestore();
+    } catch (error) {
+        alert('Error loading Firebase: ' + error.message);
+        return;
+    }
+
+    // Initial DOM check
+    if (document.getElementById('username')) {
+        alert('Page loaded successfully.');
+    } else {
+        alert('Error: DOM elements not found.');
+    }
+}
 
 async function login() {
+    if (!db) {
+        alert('Firebase not initialized yet. Please wait.');
+        return;
+    }
+
     const username = document.getElementById('username').value.trim();
     if (!username) {
         alert('Please enter a username.');
@@ -55,7 +82,7 @@ async function login() {
 }
 
 function logout() {
-    if (unsubscribeMessages) unsubscribeMessages(); // Stop listening to messages
+    if (unsubscribeMessages) unsubscribeMessages();
     alert(`Logged out from ${currentUser}`);
     currentUser = '';
     selectedUser = '';
@@ -65,6 +92,11 @@ function logout() {
 }
 
 async function updateUserList() {
+    if (!db) {
+        alert('Firebase not initialized.');
+        return;
+    }
+
     const searchTerm = document.getElementById('search-user').value.toLowerCase();
     const userList = document.getElementById('user-list');
     userList.innerHTML = '';
@@ -93,7 +125,7 @@ async function updateUserList() {
 }
 
 function selectUser(user) {
-    if (unsubscribeMessages) unsubscribeMessages(); // Stop previous listener
+    if (unsubscribeMessages) unsubscribeMessages();
     selectedUser = user;
     document.getElementById('chat-header').textContent = `Chat with ${user}`;
     alert(`Selected user: ${user}`);
@@ -101,6 +133,11 @@ function selectUser(user) {
 }
 
 async function sendMessage() {
+    if (!db) {
+        alert('Firebase not initialized.');
+        return;
+    }
+
     const input = document.getElementById('message-input');
     const text = input.value.trim();
     if (!text) {
@@ -127,6 +164,11 @@ async function sendMessage() {
 }
 
 function listenToMessages() {
+    if (!db) {
+        alert('Firebase not initialized.');
+        return;
+    }
+
     const messagesDiv = document.getElementById('messages');
     messagesDiv.innerHTML = '';
 
@@ -168,9 +210,5 @@ document.getElementById('message-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 
-// Initial Check
-if (document.getElementById('username')) {
-    alert('Page loaded successfully.');
-} else {
-    alert('Error: DOM elements not found.');
-}
+// Start the app
+initializeApp();
