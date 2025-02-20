@@ -1,16 +1,30 @@
 // Function to load Firebase SDK dynamically
 function loadFirebase() {
     return new Promise((resolve, reject) => {
+        console.log('Loading firebase-app.js');
         const appScript = document.createElement('script');
         appScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        appScript.async = false; // Load synchronously
         appScript.onload = () => {
+            console.log('firebase-app.js loaded');
+            console.log('Loading firebase-firestore.js');
             const firestoreScript = document.createElement('script');
             firestoreScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-            firestoreScript.onload = () => resolve();
-            firestoreScript.onerror = () => reject(new Error('Failed to load Firebase Firestore SDK'));
+            firestoreScript.async = false; // Load synchronously
+            firestoreScript.onload = () => {
+                console.log('firebase-firestore.js loaded');
+                resolve();
+            };
+            firestoreScript.onerror = () => {
+                console.error('Failed to load firebase-firestore.js');
+                reject(new Error('Failed to load Firebase Firestore SDK'));
+            };
             document.body.appendChild(firestoreScript);
         };
-        appScript.onerror = () => reject(new Error('Failed to load Firebase App SDK'));
+        appScript.onerror = () => {
+            console.error('Failed to load firebase-app.js');
+            reject(new Error('Failed to load Firebase App SDK'));
+        };
         document.body.appendChild(appScript);
     });
 }
@@ -29,22 +43,34 @@ const firebaseConfig = {
 let db;
 let currentUser = '';
 let selectedUser = '';
-let unsubscribeMessages = null;
+let unlinkMessages = null;
 let isFirebaseInitialized = false;
 
 async function initializeApp() {
     try {
         await loadFirebase();
         alert('Firebase SDK loaded successfully.');
-        
+
+        // Check if firebase is defined
+        if (typeof firebase === 'undefined') {
+            alert('Firebase is undefined after loading scripts. Please check your network or CDN availability.');
+            return;
+        }
+
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        isFirebaseInitialized = true;
-        alert('Firebase initialized successfully.');
-    } catch (error) {
-        alert('Error initializing Firebase: ' + error.message);
-        console.error('Initialization error:', error);
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            isFirebaseInitialized = true;
+            alert('Firebase initialized successfully.');
+        } catch (initError) {
+            alert('Error initializing Firebase: ' + initError.message);
+            console.error('Initialization error:', initError);
+            return;
+        }
+    } catch (loadError) {
+        alert('Error loading Firebase: ' + loadError.message);
+        console.error('Loading error:', loadError);
         return;
     }
 
@@ -88,7 +114,7 @@ async function login() {
 }
 
 function logout() {
-    if (unsubscribeMessages) unsubscribeMessages();
+    if (unlinkMessages) unlinkMessages();
     alert(`Logged out from ${currentUser}`);
     currentUser = '';
     selectedUser = '';
@@ -132,7 +158,7 @@ async function updateUserList() {
 }
 
 function selectUser(user) {
-    if (unsubscribeMessages) unsubscribeMessages();
+    if (unlinkMessages) unlinkMessages();
     selectedUser = user;
     document.getElementById('chat-header').textContent = `Chat with ${user}`;
     alert(`Selected user: ${user}`);
@@ -187,7 +213,7 @@ function listenToMessages() {
 
     const chatKey = [currentUser, selectedUser].sort().join('-');
     try {
-        unsubscribeMessages = db.collection('messages').doc(chatKey).collection('chat')
+        unlinkMessages = db.collection('messages').doc(chatKey).collection('chat')
             .orderBy('timestamp')
             .onSnapshot(snapshot => {
                 messagesDiv.innerHTML = '';
