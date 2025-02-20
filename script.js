@@ -30,16 +30,21 @@ let db;
 let currentUser = '';
 let selectedUser = '';
 let unsubscribeMessages = null;
+let isFirebaseInitialized = false;
 
 async function initializeApp() {
     try {
         await loadFirebase();
         alert('Firebase SDK loaded successfully.');
+        
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        alert('Firebase initialized successfully.');
         db = firebase.firestore();
+        isFirebaseInitialized = true;
+        alert('Firebase initialized successfully.');
     } catch (error) {
-        alert('Error loading Firebase: ' + error.message);
+        alert('Error initializing Firebase: ' + error.message);
+        console.error('Initialization error:', error);
         return;
     }
 
@@ -52,8 +57,8 @@ async function initializeApp() {
 }
 
 async function login() {
-    if (!db) {
-        alert('Firebase not initialized yet. Please wait.');
+    if (!isFirebaseInitialized || !db) {
+        alert('Firebase is not initialized. Please wait or check your connection.');
         return;
     }
 
@@ -72,6 +77,7 @@ async function login() {
         alert(`Logged in as ${username}`);
     } catch (error) {
         alert('Error saving user to Firestore: ' + error.message);
+        console.error('Login error:', error);
         return;
     }
 
@@ -92,8 +98,8 @@ function logout() {
 }
 
 async function updateUserList() {
-    if (!db) {
-        alert('Firebase not initialized.');
+    if (!isFirebaseInitialized || !db) {
+        alert('Firebase is not initialized.');
         return;
     }
 
@@ -121,6 +127,7 @@ async function updateUserList() {
         });
     } catch (error) {
         alert('Error fetching users: ' + error.message);
+        console.error('User list error:', error);
     }
 }
 
@@ -133,8 +140,8 @@ function selectUser(user) {
 }
 
 async function sendMessage() {
-    if (!db) {
-        alert('Firebase not initialized.');
+    if (!isFirebaseInitialized || !db) {
+        alert('Firebase is not initialized.');
         return;
     }
 
@@ -160,12 +167,13 @@ async function sendMessage() {
         input.value = '';
     } catch (error) {
         alert('Error sending message: ' + error.message);
+        console.error('Send message error:', error);
     }
 }
 
 function listenToMessages() {
-    if (!db) {
-        alert('Firebase not initialized.');
+    if (!isFirebaseInitialized || !db) {
+        alert('Firebase is not initialized.');
         return;
     }
 
@@ -198,9 +206,11 @@ function listenToMessages() {
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }, error => {
                 alert('Error listening to messages: ' + error.message);
+                console.error('Listen error:', error);
             });
     } catch (error) {
         alert('Error setting up message listener: ' + error.message);
+        console.error('Listener setup error:', error);
     }
 }
 
