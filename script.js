@@ -1,34 +1,3 @@
-// Function to load Firebase SDK dynamically
-function loadFirebase() {
-    return new Promise((resolve, reject) => {
-        console.log('Loading firebase-app.js');
-        const appScript = document.createElement('script');
-        appScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        appScript.async = false; // Load synchronously
-        appScript.onload = () => {
-            console.log('firebase-app.js loaded');
-            console.log('Loading firebase-firestore.js');
-            const firestoreScript = document.createElement('script');
-            firestoreScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-            firestoreScript.async = false; // Load synchronously
-            firestoreScript.onload = () => {
-                console.log('firebase-firestore.js loaded');
-                resolve();
-            };
-            firestoreScript.onerror = () => {
-                console.error('Failed to load firebase-firestore.js');
-                reject(new Error('Failed to load Firebase Firestore SDK'));
-            };
-            document.body.appendChild(firestoreScript);
-        };
-        appScript.onerror = () => {
-            console.error('Failed to load firebase-app.js');
-            reject(new Error('Failed to load Firebase App SDK'));
-        };
-        document.body.appendChild(appScript);
-    });
-}
-
 // Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBcaSNQuZizwEo39oz5zpCirHyuSK78Htk",
@@ -43,48 +12,46 @@ const firebaseConfig = {
 let db;
 let currentUser = '';
 let selectedUser = '';
-let unlinkMessages = null;
+let unsubscribeMessages = null;
 let isFirebaseInitialized = false;
 
-async function initializeApp() {
+function initializeApp() {
+    console.log('Starting app initialization...');
+    
+    // Check if Firebase is available
+    if (typeof firebase === 'undefined') {
+        alert('Firebase is undefined. Check if firebase-app.js and firebase-firestore.js are correctly included.');
+        console.error('Firebase not defined');
+        return;
+    }
+    console.log('Firebase object detected');
+
+    // Initialize Firebase
     try {
-        await loadFirebase();
-        alert('Firebase SDK loaded successfully.');
-
-        // Check if firebase is defined
-        if (typeof firebase === 'undefined') {
-            alert('Firebase is undefined after loading scripts. Please check your network or CDN availability.');
-            return;
-        }
-
-        // Initialize Firebase
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            isFirebaseInitialized = true;
-            alert('Firebase initialized successfully.');
-        } catch (initError) {
-            alert('Error initializing Firebase: ' + initError.message);
-            console.error('Initialization error:', initError);
-            return;
-        }
-    } catch (loadError) {
-        alert('Error loading Firebase: ' + loadError.message);
-        console.error('Loading error:', loadError);
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        isFirebaseInitialized = true;
+        alert('Firebase initialized successfully.');
+        console.log('Firebase initialized');
+    } catch (error) {
+        alert('Error initializing Firebase: ' + error.message);
+        console.error('Firebase initialization error:', error);
         return;
     }
 
     // Initial DOM check
     if (document.getElementById('username')) {
         alert('Page loaded successfully.');
+        console.log('DOM elements found');
     } else {
         alert('Error: DOM elements not found.');
+        console.error('DOM elements missing');
     }
 }
 
 async function login() {
     if (!isFirebaseInitialized || !db) {
-        alert('Firebase is not initialized. Please wait or check your connection.');
+        alert('Firebase is not initialized. Check console for details.');
         return;
     }
 
@@ -101,6 +68,7 @@ async function login() {
             lastSeen: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         alert(`Logged in as ${username}`);
+        console.log(`User ${username} logged in`);
     } catch (error) {
         alert('Error saving user to Firestore: ' + error.message);
         console.error('Login error:', error);
@@ -114,8 +82,9 @@ async function login() {
 }
 
 function logout() {
-    if (unlinkMessages) unlinkMessages();
+    if (unsubscribeMessages) unsubscribeMessages();
     alert(`Logged out from ${currentUser}`);
+    console.log(`User ${currentUser} logged out`);
     currentUser = '';
     selectedUser = '';
     document.getElementById('chat-screen').classList.add('hidden');
@@ -151,6 +120,7 @@ async function updateUserList() {
             div.onclick = () => selectUser(user);
             userList.appendChild(div);
         });
+        console.log('User list updated');
     } catch (error) {
         alert('Error fetching users: ' + error.message);
         console.error('User list error:', error);
@@ -158,10 +128,11 @@ async function updateUserList() {
 }
 
 function selectUser(user) {
-    if (unlinkMessages) unlinkMessages();
+    if (unsubscribeMessages) unsubscribeMessages();
     selectedUser = user;
     document.getElementById('chat-header').textContent = `Chat with ${user}`;
     alert(`Selected user: ${user}`);
+    console.log(`Selected user: ${user}`);
     listenToMessages();
 }
 
@@ -190,6 +161,7 @@ async function sendMessage() {
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         alert('Message sent successfully.');
+        console.log('Message sent:', text);
         input.value = '';
     } catch (error) {
         alert('Error sending message: ' + error.message);
@@ -213,7 +185,7 @@ function listenToMessages() {
 
     const chatKey = [currentUser, selectedUser].sort().join('-');
     try {
-        unlinkMessages = db.collection('messages').doc(chatKey).collection('chat')
+        unsubscribeMessages = db.collection('messages').doc(chatKey).collection('chat')
             .orderBy('timestamp')
             .onSnapshot(snapshot => {
                 messagesDiv.innerHTML = '';
@@ -230,6 +202,7 @@ function listenToMessages() {
                     messagesDiv.appendChild(div);
                 });
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                console.log('Messages updated');
             }, error => {
                 alert('Error listening to messages: ' + error.message);
                 console.error('Listen error:', error);
