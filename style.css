@@ -11,7 +11,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* Prevent scrolling on body */
+    overflow: hidden;
 }
 
 /* Auth Containers */
@@ -157,7 +157,25 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
+}
+
+.chat-header-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-status {
+    font-size: 12px;
+    color: #d1d1d1;
+}
+
+.user-status.online {
+    color: #34c759; /* Green for online */
+}
+
+.user-status.offline {
+    color: #ff3b30; /* Red for offline */
 }
 
 .back-btn {
@@ -166,7 +184,7 @@ body {
     color: white;
     font-size: 20px;
     cursor: pointer;
-    display: none; /* Hidden on desktop */
+    display: none;
 }
 
 .chat-messages {
@@ -174,7 +192,7 @@ body {
     padding: 20px;
     overflow-y: auto;
     background: #e5ddd5;
-    min-height: 0; /* Allow it to shrink if needed */
+    min-height: 0;
 }
 
 .message {
@@ -199,17 +217,16 @@ body {
     display: flex;
     background: #f8f9fa;
     border-top: 1px solid #ddd;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
 }
 
-/* Ensure input and button fit nicely */
 .chat-input input {
     flex: 1;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
     margin-right: 10px;
-    min-width: 0; /* Allow shrinking */
+    min-width: 0;
 }
 
 .chat-input button {
@@ -219,7 +236,7 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    flex-shrink: 0; /* Prevent button from shrinking */
+    flex-shrink: 0;
 }
 
 /* Popup Styles */
@@ -277,34 +294,34 @@ body {
         width: 100%;
         height: 100%;
         min-width: 0;
-        transform: translateX(0); /* Visible by default */
+        transform: translateX(0);
         position: absolute;
         z-index: 1;
     }
     .chat-area {
         width: 100%;
         height: 100%;
-        transform: translateX(100%); /* Hidden off-screen by default */
+        transform: translateX(100%);
         position: absolute;
         z-index: 2;
     }
     .chat-area.active {
-        transform: translateX(0); /* Slide in when active */
+        transform: translateX(0);
     }
     .back-btn {
-        display: block; /* Show on mobile */
+        display: block;
     }
     .user-list {
-        height: calc(100% - 110px); /* Adjust for header and search */
+        height: calc(100% - 110px);
     }
     .chat-header {
-        height: 60px; /* Fixed height for consistency */
+        height: 60px;
     }
     .chat-messages {
-        height: calc(100% - 120px); /* Subtract header and input heights */
+        height: calc(100% - 120px);
     }
     .chat-input {
-        height: 60px; /* Fixed height to ensure visibility */
+        height: 60px;
         margin-bottom: 50px;
     }
 }

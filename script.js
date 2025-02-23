@@ -10,7 +10,6 @@ const firebaseConfig = {
     measurementId: "G-50LPQ2GDHK"
 };
 
-// Check if Firebase is loaded before proceeding
 if (typeof firebase !== 'undefined') {
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -18,10 +17,10 @@ if (typeof firebase !== 'undefined') {
 
     let currentUser = null;
     let selectedUser = null;
+    let isActive = false;
+    let activityTimeout;
 
-    // Wait for DOM to load before attaching event listeners and checking auth state
     document.addEventListener('DOMContentLoaded', () => {
-        // Attach event listeners
         document.getElementById('registerBtn').addEventListener('click', register);
         document.getElementById('showLoginLink').addEventListener('click', (e) => {
             e.preventDefault();
@@ -39,11 +38,10 @@ if (typeof firebase !== 'undefined') {
         document.getElementById('closeUserPopupBtn').addEventListener('click', closeUserInfoPopup);
         document.getElementById('backBtn').addEventListener('click', showChatList);
 
-        // Check if user is already logged in
         checkAuthState();
+        setupActivityListeners();
     });
 
-    // Check Firebase auth state and localStorage on page load
     function checkAuthState() {
         const storedUser = JSON.parse(localStorage.getItem('currentUser'));
         auth.onAuthStateChanged(async (user) => {
@@ -55,6 +53,7 @@ if (typeof firebase !== 'undefined') {
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('registerPage').style.display = 'none';
                     document.getElementById('appPage').style.display = 'block';
+                    setupUserPresence(user.uid);
                     updateUserList();
                     listenForMessages();
                 } else {
@@ -68,7 +67,6 @@ if (typeof firebase !== 'undefined') {
         });
     }
 
-    // Page Switching
     function showRegister() {
         document.getElementById('registerPage').style.display = 'block';
         document.getElementById('loginPage').style.display = 'none';
@@ -79,7 +77,6 @@ if (typeof firebase !== 'undefined') {
         document.getElementById('loginPage').style.display = 'block';
     }
 
-    // Register Function
     async function register() {
         const name = document.getElementById('regName').value.trim();
         const username = document.getElementById('regUsername').value.trim();
@@ -98,7 +95,7 @@ if (typeof firebase !== 'undefined') {
             await db.ref('users/' + uid).set({
                 username,
                 name,
-                active: true
+                active: false // Initially offline until login
             });
 
             alert("Registration successful! Please login.");
@@ -111,7 +108,6 @@ if (typeof firebase !== 'undefined') {
         }
     }
 
-    // Login Function
     async function login() {
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value.trim();
@@ -130,6 +126,8 @@ if (typeof firebase !== 'undefined') {
                     const userData = snapshot.val();
                     currentUser = userData.username;
 
+                    setupUserPresence(user.uid);
+
                     localStorage.setItem('currentUser', JSON.stringify({
                         username: userData.username,
                         name: userData.name
@@ -147,15 +145,15 @@ if (typeof firebase !== 'undefined') {
         }
     }
 
-    // Logout Function
     async function logout() {
         try {
-            await auth.signOut();
-            if (currentUser) {
-                await db.ref('users/' + auth.currentUser?.uid).update({ active: false });
+            if (currentUser && auth.currentUser) {
+                await db.ref('users/' + auth.currentUser.uid).update({ active: false });
             }
+            await auth.signOut();
             currentUser = null;
             selectedUser = null;
+            isActive = false;
             localStorage.removeItem('currentUser');
             document.getElementById('appPage').style.display = 'none';
             document.getElementById('loginPage').style.display = 'block';
@@ -166,7 +164,47 @@ if (typeof firebase !== 'undefined') {
         }
     }
 
-    // Update User List with Context Menu and Touch Events
+    function setupUserPresence(uid) {
+        const userRef = db.ref('users/' + uid);
+        userRef.onDisconnect().update({ active: false }); // Set offline on disconnect
+
+        // Update status based on activity
+        if (document.visibilityState === 'visible') {
+            isActive = true;
+            userRef.update({ active: true });
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && currentUser) {
+                isActive = true;
+                userRef.update({ active: true });
+            } else {
+                isActive = false;
+                clearTimeout(activityTimeout);
+                userRef.update({ active: false });
+            }
+        });
+    }
+
+    function setupActivityListeners() {
+        const events = ['mousemove', 'keydown', 'scroll', 'click'];
+        events.forEach(event => {
+            document.addEventListener(event, () => {
+                if (currentUser && auth.currentUser && document.visibilityState === 'visible') {
+                    isActive = true;
+                    db.ref('users/' + auth.currentUser.uid).update({ active: true });
+                    clearTimeout(activityTimeout);
+                    activityTimeout = setTimeout(() => {
+                        if (document.visibilityState === 'visible') {
+                            isActive = false;
+                            db.ref('users/' + auth.currentUser.uid).update({ active: false });
+                        }
+                    }, 30000); // 30 seconds inactivity timeout
+                }
+            });
+        });
+    }
+
     function updateUserList(searchTerm = '') {
         const userList = document.getElementById('userList');
         userList.innerHTML = '';
@@ -191,13 +229,11 @@ if (typeof firebase !== 'undefined') {
                     }
                 };
 
-                // Right-click (context menu)
                 div.oncontextmenu = (e) => {
                     e.preventDefault();
                     showUserInfoPopup(user.username, user.name || 'Unknown', e.clientX, e.clientY);
                 };
 
-                // Long-press (touch hold) for mobile
                 let touchTimer;
                 div.addEventListener('touchstart', (e) => {
                     touchTimer = setTimeout(() => {
@@ -221,9 +257,28 @@ if (typeof firebase !== 'undefined') {
 
     function selectUser(user) {
         selectedUser = user;
-        document.getElementById('chatHeader').children[1].textContent = user; // Update span text
+        document.getElementById('chatUsername').textContent = user;
+        updateUserStatus(user);
         updateUserList();
         loadMessages();
+
+        db.ref('users').orderByChild('username').equalTo(user).on('value', snapshot => {
+            const userData = snapshot.val();
+            if (userData) {
+                const uid = Object.keys(userData)[0];
+                const status = userData[uid].active ? 'Online' : 'Offline';
+                updateUserStatus(user, status);
+            }
+        });
+    }
+
+    function updateUserStatus(username, status) {
+        const statusElement = document.getElementById('userStatus');
+        if (selectedUser === username) {
+            statusElement.textContent = status || 'Loading...';
+            statusElement.className = 'user-status';
+            statusElement.classList.add(status === 'Online' ? 'online' : 'offline');
+        }
     }
 
     function loadMessages() {
@@ -266,7 +321,6 @@ if (typeof firebase !== 'undefined') {
         });
     }
 
-    // Mobile Toggle Functions
     function showChatArea() {
         document.getElementById('chatArea').classList.add('active');
         document.getElementById('sidebar').style.transform = 'translateX(-100%)';
@@ -277,7 +331,6 @@ if (typeof firebase !== 'undefined') {
         document.getElementById('sidebar').style.transform = 'translateX(0)';
     }
 
-    // Profile Popup Functions
     function showProfilePopup() {
         const storedUser = JSON.parse(localStorage.getItem('currentUser'));
         if (storedUser) {
@@ -291,7 +344,6 @@ if (typeof firebase !== 'undefined') {
         document.getElementById('profilePopup').style.display = 'none';
     }
 
-    // User Info Popup Functions
     function showUserInfoPopup(username, name, x, y) {
         document.getElementById('userPopupUsername').textContent = username;
         document.getElementById('userPopupName').textContent = name;
