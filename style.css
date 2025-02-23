@@ -304,6 +304,7 @@ body {
         height: calc(100% - 120px); /* Subtract header and input heights */
     }
     .chat-input {
-        height: 110px; /* Fixed height to ensure visibility */
+        height: 60px; /* Fixed height to ensure visibility */
+        margin-bottom: 50px;
     }
 }
