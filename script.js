@@ -54,7 +54,7 @@ if (typeof firebase !== 'undefined') {
                     currentUser = userData.username;
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('registerPage').style.display = 'none';
-                    document.getElementById('appPage').style.display = 'flex';
+                    document.getElementById('appPage').style.display = 'block';
                     updateUserList();
                     listenForMessages();
                 } else {
@@ -137,7 +137,7 @@ if (typeof firebase !== 'undefined') {
 
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('registerPage').style.display = 'none';
-                    document.getElementById('appPage').style.display = 'flex';
+                    document.getElementById('appPage').style.display = 'block';
                     updateUserList();
                     listenForMessages();
                 }
@@ -182,7 +182,7 @@ if (typeof firebase !== 'undefined') {
                 div.onclick = () => {
                     selectUser(user.username);
                     if (window.innerWidth <= 768) {
-                        showChatArea(); // Show chat area on mobile
+                        showChatArea();
                     }
                 };
 
@@ -264,12 +264,12 @@ if (typeof firebase !== 'undefined') {
     // Mobile Toggle Functions
     function showChatArea() {
         document.getElementById('chatArea').classList.add('active');
-        document.querySelector('.sidebar').style.display = 'none';
+        document.getElementById('sidebar').style.transform = 'translateX(-100%)';
     }
 
     function showChatList() {
         document.getElementById('chatArea').classList.remove('active');
-        document.querySelector('.sidebar').style.display = 'flex';
+        document.getElementById('sidebar').style.transform = 'translateX(0)';
     }
 
     // Profile Popup Functions
