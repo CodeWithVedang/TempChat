@@ -7,39 +7,79 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Register Page -->
+    <div class="auth-container" id="registerPage">
+        <h1>Register</h1>
+        <input type="text" id="regName" placeholder="Your Name" maxlength="50">
+        <input type="text" id="regUsername" placeholder="Username" maxlength="20">
+        <input type="password" id="regPassword" placeholder="Password">
+        <button id="registerBtn">Register</button>
+        <p>Already have an account? <a href="#" id="showLoginLink">Login</a></p>
+    </div>
+
     <!-- Login Page -->
-    <div class="login-container" id="loginPage">
-        <h1>ChatApp</h1>
-        <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="20">
-        <button onclick="login()">Join Chat</button>
+    <div class="auth-container" id="loginPage" style="display: none;">
+        <h1>Login</h1>
+        <input type="text" id="loginUsername" placeholder="Username" maxlength="20">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button id="loginBtn">Login</button>
+        <p>Need an account? <a href="#" id="showRegisterLink">Register</a></p>
     </div>
 
-    <!-- Chat Interface -->
-    <div class="chat-container" id="chatPage" style="display: none;">
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h2>Chats</h2>
-                <button onclick="logout()">Logout</button>
+    <!-- Main App (Chat Only) -->
+    <div class="app-container" id="appPage" style="display: none;">
+        <!-- Chat Interface -->
+        <div class="chat-container">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Chats</h2>
+                    <div class="header-buttons">
+                        <button id="profileBtn" class="profile-logo">👤</button>
+                        <button id="logoutBtn" class="logout-btn">Logout</button>
+                    </div>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search users..." onkeyup="searchUsers()">
+                </div>
+                <div class="user-list" id="userList"></div>
             </div>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search users..." onkeyup="searchUsers()">
-            </div>
-            <div class="user-list" id="userList"></div>
-        </div>
-        <div class="chat-area">
-            <div class="chat-header" id="chatHeader">
-                <span>Select a user to start chatting</span>
-            </div>
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input">
-                <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
-                <button onclick="sendMessage()">Send</button>
+            <div class="chat-area" id="chatArea">
+                <div class="chat-header" id="chatHeader">
+                    <button id="backBtn" class="back-btn">← Back</button>
+                    <span>Select a user to start chatting</span>
+                </div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button id="sendBtn">Send</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- Profile Popup -->
+    <div class="popup" id="profilePopup" style="display: none;">
+        <div class="popup-content">
+            <h3>Your Profile</h3>
+            <p><strong>Username:</strong> <span id="popupUsername"></span></p>
+            <p><strong>Name:</strong> <span id="popupName"></span></p>
+            <button id="closePopupBtn">Close</button>
+        </div>
+    </div>
+
+    <!-- User Info Popup -->
+    <div class="popup" id="userInfoPopup" style="display: none;">
+        <div class="popup-content">
+            <h3>User Info</h3>
+            <p><strong>Username:</strong> <span id="userPopupUsername"></span></p>
+            <p><strong>Name:</strong> <span id="userPopupName"></span></p>
+            <button id="closeUserPopupBtn">Close</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (v8 for UMD compatibility) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="script.js"></script>
 </body>

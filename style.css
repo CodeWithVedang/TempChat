@@ -13,8 +13,8 @@ body {
     align-items: center;
 }
 
-/* Login Page */
-.login-container {
+/* Auth Containers */
+.auth-container {
     background: white;
     padding: 40px;
     border-radius: 10px;
@@ -22,20 +22,20 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.login-container h1 {
+.auth-container h1 {
     margin-bottom: 20px;
     color: #075e54;
 }
 
-.login-container input {
+.auth-container input {
     width: 100%;
     padding: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;
 }
 
-.login-container button {
+.auth-container button {
     padding: 10px 20px;
     background: #075e54;
     color: white;
@@ -44,17 +44,29 @@ body {
     cursor: pointer;
 }
 
-/* Chat Container */
-.chat-container {
-    display: flex;
-    width: 100%;
-    max-width: 1200px;
-    height: 100vh;
-    background: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.auth-container p {
+    margin-top: 15px;
 }
 
-/* Sidebar */
+.auth-container a {
+    color: #075e54;
+    text-decoration: none;
+}
+
+/* App Container */
+.app-container {
+    display: flex;
+    width: 100%;
+    max-width: 1400px;
+    height: 100vh;
+}
+
+/* Chat Container */
+.chat-container {
+    flex: 1;
+    display: flex;
+}
+
 .sidebar {
     width: 30%;
     min-width: 250px;
@@ -73,7 +85,20 @@ body {
     align-items: center;
 }
 
-.sidebar-header button {
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.profile-logo {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+}
+
+.logout-btn {
     background: #d32f2f;
     border: none;
     padding: 5px 10px;
@@ -113,7 +138,6 @@ body {
     color: white;
 }
 
-/* Chat Area */
 .chat-area {
     flex: 1;
     display: flex;
@@ -125,6 +149,18 @@ body {
     background: #075e54;
     color: white;
     border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: none; /* Hidden by default on desktop */
 }
 
 .chat-messages {
@@ -175,19 +211,76 @@ body {
     cursor: pointer;
 }
 
-/* Responsive Design */
+/* Popup Styles */
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-width: 300px;
+    width: 100%;
+}
+
+.popup-content h3 {
+    margin-bottom: 15px;
+    color: #075e54;
+}
+
+.popup-content p {
+    margin-bottom: 10px;
+}
+
+.popup-content button {
+    padding: 10px 20px;
+    background: #075e54;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Responsive Design for Mobile */
 @media (max-width: 768px) {
-    .chat-container {
+    .app-container {
         flex-direction: column;
     }
-    
+    .chat-container {
+        flex-direction: column;
+        height: 100vh;
+    }
     .sidebar {
         width: 100%;
-        height: 40%;
-        min-height: 200px;
+        height: 100%; /* Full height on mobile */
+        display: flex; /* Ensure it stays visible by default */
     }
-    
     .chat-area {
-        height: 60%;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 100%; /* Hidden off-screen by default */
+        transition: left 0.3s ease; /* Smooth slide effect */
+    }
+    .chat-area.active {
+        left: 0; /* Slide in when active */
+    }
+    .back-btn {
+        display: block; /* Show back button on mobile */
+    }
+    .user-list {
+        height: calc(100% - 100px); /* Adjust height for header and search */
     }
 }
