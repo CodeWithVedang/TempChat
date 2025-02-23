@@ -157,6 +157,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .back-btn {
@@ -173,6 +174,7 @@ body {
     padding: 20px;
     overflow-y: auto;
     background: #e5ddd5;
+    min-height: 0; /* Allow it to shrink if needed */
 }
 
 .message {
@@ -197,14 +199,17 @@ body {
     display: flex;
     background: #f8f9fa;
     border-top: 1px solid #ddd;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
+/* Ensure input and button fit nicely */
 .chat-input input {
     flex: 1;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
     margin-right: 10px;
+    min-width: 0; /* Allow shrinking */
 }
 
 .chat-input button {
@@ -214,6 +219,7 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    flex-shrink: 0; /* Prevent button from shrinking */
 }
 
 /* Popup Styles */
@@ -290,5 +296,14 @@ body {
     }
     .user-list {
         height: calc(100% - 110px); /* Adjust for header and search */
+    }
+    .chat-header {
+        height: 60px; /* Fixed height for consistency */
+    }
+    .chat-messages {
+        height: calc(100% - 120px); /* Subtract header and input heights */
+    }
+    .chat-input {
+        height: 60px; /* Fixed height to ensure visibility */
     }
 }
