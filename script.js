@@ -173,12 +173,17 @@ if (typeof firebase !== 'undefined') {
         db.ref('users').once('value', snapshot => {
             const users = snapshot.val() || {};
             const filteredUsers = Object.values(users)
-                .filter(user => user.username !== currentUser && user.username.toLowerCase().includes(searchTerm.toLowerCase()));
+                .filter(user => 
+                    user && 
+                    typeof user.username === 'string' && 
+                    user.username !== currentUser && 
+                    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+                );
 
             filteredUsers.forEach(user => {
                 const div = document.createElement('div');
                 div.className = 'user-item';
-                div.textContent = `${user.username} (${user.name})`;
+                div.textContent = `${user.username} (${user.name || 'Unknown'})`;
                 div.onclick = () => {
                     selectUser(user.username);
                     if (window.innerWidth <= 768) {
@@ -189,7 +194,7 @@ if (typeof firebase !== 'undefined') {
                 // Right-click (context menu)
                 div.oncontextmenu = (e) => {
                     e.preventDefault();
-                    showUserInfoPopup(user.username, user.name, e.clientX, e.clientY);
+                    showUserInfoPopup(user.username, user.name || 'Unknown', e.clientX, e.clientY);
                 };
 
                 // Long-press (touch hold) for mobile
@@ -197,7 +202,7 @@ if (typeof firebase !== 'undefined') {
                 div.addEventListener('touchstart', (e) => {
                     touchTimer = setTimeout(() => {
                         const touch = e.touches[0];
-                        showUserInfoPopup(user.username, user.name, touch.clientX, touch.clientY);
+                        showUserInfoPopup(user.username, user.name || 'Unknown', touch.clientX, touch.clientY);
                     }, 500);
                 });
                 div.addEventListener('touchend', () => clearTimeout(touchTimer));
